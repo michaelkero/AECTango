@@ -351,17 +351,19 @@ public class TangoARPoseController : MonoBehaviour, ITangoLifecycle
 [DataContract]
 public class LocationData {
 
-    [DataMember]
-    public double x { get; set; }
+    [DataMember] public double x;
 
-    [DataMember]
-    public double y { get; set; }
+    [DataMember] public double y;
 
-    [DataMember]
-    public double z { get; set; }
+    [DataMember] public double z;
 
-    [DataMember]
-    public double rot { get; set; }
+    [DataMember] public double rot;
+
+    public LocationData(double x, double y, double z, double rot) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+    }
 }
 
 [DataContract]
@@ -377,7 +379,7 @@ public static class ServerHelper {
     private static string ImageAddress = ServerAddress + "";
 
     public static void CreateAndSendLocationJson(double x, double y, double z, double rot) {
-        var json = JsonUtility.ToJson(new LocationData{x = x, y = y, z = z, rot = rot}, true);
+        var json = JsonUtility.ToJson(new LocationData(x, y, z, rot), true);
         SendJsonString(LocationAddress, json);
     }
 
