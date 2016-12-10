@@ -19,6 +19,9 @@
 //-----------------------------------------------------------------------
 using System;
 using System.Collections;
+using System.Net;
+using System.Runtime.Serialization;
+using System.Text;
 using Tango;
 using UnityEngine;
 using UnityEngine.UI;
@@ -297,6 +300,7 @@ public class TangoARPoseController : MonoBehaviour, ITangoLifecycle
         double z = Math.Round(transform.position.z, 4);
         double ang = Math.Cos(transform.rotation[1] / 2);
         text.text = x + " , " + y + " , " + z + " , " + Math.Round(ang, 4);
+        ServerHelper.CreateAndSendLocationJson(x, y, z, ang);
     }
 
     /// <summary>
@@ -342,4 +346,66 @@ public class TangoARPoseController : MonoBehaviour, ITangoLifecycle
 
         m_dTuc = Matrix4x4.Inverse(imuTd) * imuTc * cTuc;
     }
+}
+
+[DataContract]
+public class LocationData {
+
+    [DataMember]
+    public double x { get; set; }
+
+    [DataMember]
+    public double y { get; set; }
+
+    [DataMember]
+    public double z { get; set; }
+
+    [DataMember]
+    public double rot { get; set; }
+}
+
+[DataContract]
+public class ImageData {
+    
+
+}
+
+public static class ServerHelper {
+
+    private static string ServerAddress = "";
+    private static string LocationAddress = ServerAddress + "";
+    private static string ImageAddress = ServerAddress + "";
+
+    public static void CreateAndSendLocationJson(double x, double y, double z, double rot) {
+        var json = JsonUtility.ToJson(new LocationData{x = x, y = y, z = z, rot = rot}, true);
+        SendJsonString(LocationAddress, json);
+    }
+
+    public static void CreateAndSendImageJson() {
+        var json = JsonUtility.ToJson(new ImageData(), true);
+        SendJsonString(ImageAddress, json);
+    }
+
+    private static void SendJsonString(string url, string jsonToSend) {
+        var data = Encoding.ASCII.GetBytes(jsonToSend);
+        var req = WebRequest.Create(url);
+        req.ContentType = "application/json";
+        req.Method = "POST";
+        req.ContentLength = data.Length;
+        req.Timeout = 1800000; //System.Threading.Timeout.Infinite;
+
+        using (var stream = req.GetRequestStream()) {
+            var bufferLengthS = 8000;
+            var offset = 0;
+            while (offset < data.Length) {
+                if (offset + bufferLengthS > data.Length) {
+                    bufferLengthS = data.Length - offset;
+                }
+                stream.Write(data, offset, bufferLengthS);
+                offset += bufferLengthS;
+            }
+            stream.Close();
+        }
+    }
+
 }
